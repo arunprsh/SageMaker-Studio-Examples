@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+
+from flask import Flask, Response, request
+from io import StringIO
+import pandas as pd
+import logging
+import pickle
+import os
+
+
+app = Flask(__name__)
+
+MODEL_PATH = '/opt/ml/model'
+
+# Singleton Class for holding the Model
+class Predictor:
+    model = None
+    
+    @classmethod
+    def load_model(cls):
+        print('[LOADING MODEL]')
+        if cls.model is None:
+            with open(os.path.join(MODEL_PATH, 'model.pkl'), 'rb') as file_:
+                cls.model = pickle.load(file_)
+        print('MODEL LOADED!')
+        return cls.model
+    
+    @classmethod
+    def predict(cls, X):
+        clf = cls.load_model()
+        return clf.predict(X)
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    print('[HEALTH CHECK]')
+    model = Predictor.load_model()
+    status = 200
+    if model is None:
+        status = 404
+    return Response(response={"HEALTH CHECK": "OK"}, status=status, mimetype='application/json')
+
+@app.route('/invocations', methods=['POST'])
+def invoke():
+    data = None
+
+    # Transform Payload in CSV to Pandas DataFrame.
+    if request.content_type == 'text/csv':
+        data = request.data.decode('utf-8')
+        data = StringIO(data)
+        data = pd.read_csv(data, header=None)
+    else:
+        return flask.Response(response='This Predictor only supports CSV data', status=415, mimetype='text/plain')
+
+    logging.info('Invoked with {} records'.format(data.shape[0]))
+    
+    predictions = Predictor.predict(data)
+
+    # Convert from numpy back to CSV
+    out = StringIO()
+    pd.DataFrame({'results': predictions}).to_csv(out, header=False, index=False)
+    result = out.getvalue()
+
+    return Response(response=result, status=200, mimetype='text/csv')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
