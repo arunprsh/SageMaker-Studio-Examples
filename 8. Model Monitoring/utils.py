@@ -167,14 +167,14 @@ def style_violation_df(df, df_style):
         df_style_cp = df_style.copy()
         values = df_style_cp.values.any(axis=1, keepdims=True) * np.ones_like(df_style)
         df_style_cp = pd.DataFrame(values, index=df.index, columns=df.columns)
-        df_style_cp = df_style_cp.replace(to_replace=True, value='background-color: #616161')
+        df_style_cp = df_style_cp.replace(to_replace=True, value='background-color: #1e2935')
         df_style_cp = df_style_cp.replace(to_replace=False, value='')
         return df_style_cp
     
     def highlight_failed(df):
         nonlocal df_style
         df_style_cp = df_style.copy()
-        df_style_cp = df_style_cp.replace(to_replace=True, value='background-color: #616161')
+        df_style_cp = df_style_cp.replace(to_replace=True, value='background-color: #1e2935')
         df_style_cp = df_style_cp.replace(to_replace=False, value='')
         return df_style_cp
     
