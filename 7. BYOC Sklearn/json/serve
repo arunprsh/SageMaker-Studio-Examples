@@ -30,7 +30,6 @@ class Predictor:
     @classmethod
     def predict(cls, X):
         X = X.reshape(1, -1)
-        print(f'X: {X}')
         clf = cls.load_model()
         return clf.predict(X)
 
@@ -54,9 +53,7 @@ def invoke():
     else:
         return Response(response='This Predictor only supports JSON data', status=415, mimetype='text/plain')
 
-    prediction = Predictor.predict(features)
-    print('prediction', prediction)
-    
+    prediction = Predictor.predict(features)    
     result = {'predictions': prediction.tolist()}
     result = json.dumps(result, indent=2).encode('utf-8')
     return Response(response=result, status=200, mimetype='application/json')
