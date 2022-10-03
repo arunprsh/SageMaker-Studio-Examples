@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+from sklearn.neighbors import KNeighborsClassifier
+import pandas as pd
+import numpy as np
+import pickle
+import os
+
+
+np.random.seed(123)
+
+# Define paths for Model Training inside Container.
+INPUT_PATH = '/opt/ml/input/data'
+OUTPUT_PATH = '/opt/ml/output'
+MODEL_PATH = '/opt/ml/model'
+PARAM_PATH = '/opt/ml/input/config/hyperparameters.json'
+
+# Training data sitting in S3 will be copied to this location during training when used with File MODE.
+TRAIN_DATA_PATH = f'{INPUT_PATH}/train'
+TEST_DATA_PATH = f'{INPUT_PATH}/test'
+
+def train():
+    print("------- [STARTING TRAINING] -------")
+    train_df = pd.read_csv(os.path.join(TRAIN_DATA_PATH, 'train.csv'), names=['class', 'bmi', 'diastolic_bp_change', 'systolic_bp_change', 'respiratory_rate'])
+    train_df.head()
+    X_train = train_df[['bmi', 'diastolic_bp_change', 'systolic_bp_change', 'respiratory_rate']]
+    y_train = train_df['class']
+    knn = KNeighborsClassifier()
+    knn.fit(X_train, y_train)
+    # Save the trained Model inside the Container
+    with open(os.path.join(MODEL_PATH, 'model.pkl'), 'wb') as out:
+        pickle.dump(knn, out)
+    print("------- [TRAINING COMPLETE!] -------")
+    
+    print("------- [STARTING EVALUATION] -------")
+    test_df = pd.read_csv(os.path.join(TEST_DATA_PATH, 'test.csv'), names=['class', 'bmi', 'diastolic_bp_change', 'systolic_bp_change', 'respiratory_rate'])
+    X_test = train_df[['bmi', 'diastolic_bp_change', 'systolic_bp_change', 'respiratory_rate']]
+    y_test = train_df['class']
+    acc = knn.score(X_test, y_test)
+    print('Accuracy = {:.2f}%'.format(acc * 100))
+    print("------- [EVALUATION DONE!] -------")
+
+if __name__ == '__main__':
+    train()
